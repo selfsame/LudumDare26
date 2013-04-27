@@ -1,0 +1,7 @@
+#game_area{
+	position:relative;
+	display:block;
+	border: 1px solid black;
+	margin: 100px auto;
+}
+
