@@ -1,4 +1,4 @@
-$(document).ready ->
+physics_stuff = ()->
   
   
   b2Vec2 = Box2D.Common.Math.b2Vec2
@@ -129,13 +129,4 @@ $(document).ready ->
   
   
 
-  $('#game_area').mousedown (e)->
-    window.isMouseDown = true
-    handleMouseMove e
-  $('#game_area').mouseup (e)->
-    window.isMouseDown = false
-    window.mouseX = `undefined`
-    window.mouseY = `undefined`
-    handleMouseMove e
-  $('#game_area').mousemove (e)->
-    handleMouseMove e
+ 

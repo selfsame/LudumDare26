@@ -1,7 +1,29 @@
-#game_area{
+#centered{
 	position:relative;
 	display:block;
+	width: 800px;
+	height: 600px;
 	border: 1px solid black;
 	margin: 100px auto;
 }
 
+#game_level{
+	position:relative;
+	width: 800px;
+	height: 600px;
+	overflow:hidden;
+}
+
+#game_area{
+	top:0px;
+	left:0px;
+	position:absolute;
+}
+
+
+#player{
+	position:absolute;
+	width:20px;
+	height:60px;
+	background-color:pink;
+}
