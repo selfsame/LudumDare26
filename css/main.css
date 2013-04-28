@@ -5,13 +5,27 @@
 	height: 600px;
 	border: 1px solid black;
 	margin: 100px auto;
+	overflow:hidden;
+}
+
+#game_entities{
+	position:absolute;
+	top:0px;
+	left: 0px;
+	width: 800px;
+	height: 600px;
+	
 }
 
 #game_level{
 	position:relative;
 	width: 800px;
 	height: 600px;
-	overflow:hidden;
+	
+}
+
+#background{
+	position:absolute;
 }
 
 #game_area{
@@ -26,4 +40,17 @@
 	width:20px;
 	height:60px;
 	background-color:pink;
+	box-sizing:border-box;
+	z-index: 999999;
+}
+
+
+.debug{
+	width: 60px;
+	height: 30px;
+	padding: 10px;
+	margin: -50px 0px 0px -20px;
+	font-size: 10px;
+	background-color: white;
+	opacity: .8;
 }

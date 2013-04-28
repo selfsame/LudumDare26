@@ -1,11 +1,19 @@
+Entity = window.entities.Entity
+Sentient = window.entities.Sentient
+Player = window.entities.Player
+
 $(window).ready ->
 	window.game =
 		box2Dworld: 0
 		current_level: 0
+		current_level_background: 0
 		current_level_style: 0
+		current_level__background_style: 0
 		game_area_position: [0,0]
 		debugdraw: 1
 		player: 0
+		game_w: 800
+		game_h: 600
 		init: ()->
 			$(window).keydown (e)->
 				console.log e.keyCode
@@ -24,33 +32,82 @@ $(window).ready ->
 			@game_area_position = [g_o.left, g_o.top]
 			@static_objects = []
 			@dynamic_objects = []
-			$.get './levels/'+name, (data)->
+			$.get './levels/background01.html', (data)->
 
 				temp = $('<div></div>')
 				temp.html data
-				if @current_level_style
-					@current_level_style.detach()
-					@current_level_style = 0
+				if @current_level_background_style
+					@current_level_background_style.detach()
+					@current_level_background_style = 0
 				style = temp.children('style')
 				$('head').append style
-				@current_level_style = style
-				$('#game_level').html ''
-				for div in temp.children('div')
-					console.log '-- ', div
-					$('#game_level').append $(div)
-				window.game.setup_level_physics()
+				@current_level_background_style = style
+				$('#background').html ''
+				window.t = temp
+				#console.log data
+				for div in temp.children('div, img')
+					#console.log '-- ', div
+					$('#background').append $(div)
+
+
+				$.get './levels/'+name, (data)->
+
+					temp = $('<div></div>')
+					temp.html data
+					if @current_level_style
+						@current_level_style.detach()
+						@current_level_style = 0
+					style = temp.children('style')
+					$('head').append style
+					@current_level_style = style
+					$('#game_level').html ''
+					for div in temp.children('div')
+						#console.log '-- ', div
+						$('#game_level').append $(div)
+					window.game.setup_level_physics()
 
 				
 
 
 		insert_player: ()->
 			pel = $('<div id="player"></div>')
-			$('#centered').append pel
+			$('#game_entities').append pel
 			pel.css
 				left:10
 				top:10
 			@player = new Player(pel[0], 1)
 			@dynamic_objects.push @player
+
+		contact_add: (point)->
+			ab = window.game.get_contact_entities point
+			if ab[0].dynamic
+				ab[0].contact_add ab[1], point
+			if ab[1].dynamic
+				ab[1].contact_add ab[0], point
+		contact_begin: (point)->
+			ab = window.game.get_contact_entities point
+			if ab[0].dynamic
+				ab[0].contact_begin ab[1], point
+			if ab[1].dynamic
+				ab[1].contact_begin ab[0], point
+		contact_persist: (point)->
+			ab = window.game.get_contact_entities point
+			if ab[0].dynamic
+				ab[0].contact_persist ab[1], point
+			if ab[1].dynamic
+				ab[1].contact_persist ab[0], point
+		contact_remove: (point)->
+			ab = window.game.get_contact_entities point
+			if ab[0].dynamic
+				ab[0].contact_remove ab[1], point
+			if ab[1].dynamic
+				ab[1].contact_remove ab[0], point
+
+		get_contact_entities: (point)->
+			A = point.m_fixtureA.m_body.GetUserData()
+			B = point.m_fixtureB.m_body.GetUserData()
+			return [A, B]
+
 
 		setup_level_physics: ()->
 			b2Vec2 = Box2D.Common.Math.b2Vec2
@@ -65,9 +122,19 @@ $(window).ready ->
 			b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
 			b2DebugDraw = Box2D.Dynamics.b2DebugDraw
 			b2MouseJointDef = Box2D.Dynamics.Joints.b2MouseJointDef
-			@box2Dworld = new b2World(new b2Vec2(0, 20), true)
+			@box2Dworld = new b2World(new b2Vec2(0, 30), true)
 			world = @box2Dworld
 
+			@ContactListener = new Box2D.Dynamics.b2ContactListener()
+			@ContactListener.Add = @contact_add
+			@ContactListener.BeginContact = @contact_begin
+			@ContactListener.Persist = @contact_persist
+			@ContactListener.EndContact = @contact_remove
+
+			@box2Dworld.SetContactListener @ContactListener
+
+
+			console.log @ContactListener
 
 			for div in $('#game_level').children()
 
@@ -75,6 +142,8 @@ $(window).ready ->
 
 				if $(div).hasClass 'dynamic'
 					@dynamic_objects.push entity
+					$(div).detach()
+					$('#game_entities').append $(div)
 				else
 					@static_objects.push entity
 
@@ -139,7 +208,11 @@ $(window).ready ->
 		update_world: ()->
 
 			requestAnimationFrame(window.game.update_world)
-			window.game.box2Dworld.Step( (1 / 10), 10, 10 )
+
+			for entity in window.game.dynamic_objects
+				entity.pre_step_update()
+
+			window.game.box2Dworld.Step( (1 / 10), 20, 20 )
 			if window.game.debugdraw
 
 				window.game.box2Dworld.DrawDebugData()
@@ -148,140 +221,31 @@ $(window).ready ->
 			for entity in window.game.dynamic_objects
 				entity.update()
 
+			window.game.move_layers()
 
 
-	class Entity
-		constructor: (element, dynamic=0)->
-			@init()
-			@element = $(element)
-			@angle = window.game.get_element_rotation element
-			if not @angle
-				@angle = 0
-
-			if dynamic is 1 or @element.hasClass 'dynamic'
-				@dynamic = 1
-			else
-				@dynamic = 0
-
-
-			@x = element.offsetLeft
-			@y = element.offsetTop
-
-			@w = @element.outerWidth()
-			@h = @element.outerHeight()
-
-			@construct_physical()
-
-		init: ()->
-			@_cached_x = 0
-			@_cached_y = 0
-			@_cached_degrees = 0
-			@_show_rotation = 1
-			@_keep_upright = 0
-			@max_force = 0
-
-
-		construct_physical: ()->
-			@Box_ref = window.game.create_body(@x+(@w/2),@y+(@h/2),@w/2,@h/2, @angle, @dynamic)
-			@Body = @Box_ref.m_body
-
-			@max_force = 300.0 * @Body.GetMass()
-
-		update: ()->
-			x = @Body.m_xf.position.x - @w/2
-			y = @Body.m_xf.position.y - @h/2
-
-			gp = window.game.game_area_position
-			
-			needs_pos_redraw = 0
-			if Math.abs(@_cached_x - x) >= 1
-				@_cached_x = x
-				needs_pos_redraw = 1
-			if Math.abs(@_cached_y - y) >= 1
-				@_cached_y = y
-				needs_pos_redraw = 1
-			if needs_pos_redraw
-				if @_show_rotation
-					@element.css('-webkit-transform', '')
-				@element.offset( {left:x+gp[0], top:y+gp[1]} )
-
-			if @_show_rotation
-				degrees = @Body.GetAngle() * (180/Math.PI)
-				if Math.abs(@_cached_degrees - degrees) >= 1 or needs_pos_redraw
-					@_cached_degrees = degrees
-					@element.css('-webkit-transform', 'rotate('+degrees+'deg)')
-
-			if @_keep_upright
-				@Body.m_sweep.a = 0
-
-			@update_other()
-
-		update_other: ()->
-			n = false
-
-	class Sentient extends Entity
-		init: ()->
-			@_cached_x = 0
-			@_cached_y = 0
-			@_cached_degrees = 0
-			@_show_rotation = 1
-			@_keep_upright = 0
-			@move_intent = [0,0]
-
-		apply_force: ()->
-			x = @move_intent[0] * @max_force
-			y = @move_intent[1] * @max_force
-			v = new Box2D.Common.Math.b2Vec2(x,y)
-			p = @Body.GetPosition()
-			@Body.ApplyForce( v, p )
-
-		apply_impulse: (x, y)->
-			x = x * @max_force
-			y = y * @max_force
-			v = new Box2D.Common.Math.b2Vec2(x,y)
-			p = @Body.GetPosition()
-			@Body.ApplyImpulse( v, p )
-
-	class Player extends Sentient
-		init: ()->
-			@_cached_x = 0
-			@_cached_y = 0
-			@_cached_degrees = 0
-			@_show_rotation = 1
-			@_keep_upright = 1
-			@keys = {}
-			@move_intent = [0,0]
-
-		update_other: ()->
-			if @keys['up'] is 1
-				@apply_impulse(0, -1)
-
-			@move_intent[0] = 0
-			if @keys['right'] is 1
-				@move_intent[0] = .1
-
-			if @keys['left'] is 1
-				@move_intent[0] = -.1
-
-			@apply_force()
-			
-
-		keydown: (e)->
-			if e.keyCode in [87, 38]
-				@keys['up'] = 1
-			else if e.keyCode in [68, 39]
-				@keys['right'] = 1
-			else if e.keyCode in [65, 37]
-				@keys['left'] = 1
-		keyup: (e)->
-			if e.keyCode in [87, 38]
-				@keys['up'] = 0
-			else if e.keyCode in [68, 39]
-				@keys['right'] = 0
-			else if e.keyCode in [65, 37]
-				@keys['left'] = 0
+		move_layers: ()->
+			if @player
 				
 
+
+				x = @player.x - @game_w/2
+				y = @player.y - @game_h/2
+				g_o = $('#game_level').offset()
+				#@game_area_position = [g_o.left+x, g_o.top+y]
+				#console.log 'move layers, ', @player, x, y
+				for layer, i in $('#background').children()
+					$(layer).css
+						'left':  (-x / i)*.4   #-(x-gp[0])
+						'top':  (-y  / i)*.4  #-(y-gp[1])
+
+				$('#game_level, #game_area, #game_entities').css
+					'left':  (-x )
+					'top':  (-y  )
+				#@game_area_position[0]
+				#$('#background, #game_level, #game_area').css
+				#	'left': -x
+				#	'top': -y
 
 
 
