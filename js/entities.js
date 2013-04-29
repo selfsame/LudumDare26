@@ -14,6 +14,7 @@
       }
       this.init();
       this.element = $(element);
+      this.element.data('entity', this);
       this.angle = window.game.get_element_rotation(element);
       if (!this.angle) {
         this.angle = 0;
@@ -36,14 +37,29 @@
       this._cached_degrees = 0;
       this._show_rotation = 1;
       this._keep_upright = 0;
-      return this.max_force = 0;
+      this.max_force = 0;
+      return this.max_velocity = 10;
     };
 
     Entity.prototype.construct_physical = function() {
       this.Box_ref = window.game.create_body(this.x + (this.w / 2), this.y + (this.h / 2), this.w / 2, this.h / 2, this.angle, this.dynamic);
+      this.w = this.w / window.game.scale;
+      this.h = this.h / window.game.scale;
       this.Body = this.Box_ref.m_body;
       this.Body.SetUserData(this);
-      return this.max_force = 300.0 * this.Body.GetMass();
+      if (this.element.hasClass('trigger') || this.element.hasClass('door')) {
+        this.trigger = 1;
+      }
+      if (this.element.hasClass('player')) {
+        this.is_player = 1;
+      }
+      if (this.trigger || this.is_player) {
+        this.Body.m_fixtureList.m_filter.groupIndex = -2;
+      }
+      if (this.trigger) {
+        console.log(this.element[0]);
+      }
+      return this.max_force = (300.0 * this.Body.GetMass()) / window.game.scale;
     };
 
     Entity.prototype.contact_add = function(entity, point) {};
@@ -60,15 +76,17 @@
       var degrees, eo, ep, gp, needs_pos_redraw, x, y;
       x = this.Body.m_xf.position.x - this.w / 2;
       y = this.Body.m_xf.position.y - this.h / 2;
+      this.x = x;
+      this.y = y;
       gp = window.game.game_area_position;
       eo = $('#game_entities').offset();
       ep = [eo[0], eo[1]];
       needs_pos_redraw = 0;
-      if (Math.abs(this._cached_x - x) >= 1) {
+      if (Math.abs(this._cached_x - x) >= 1 / window.game.scale) {
         this._cached_x = x;
         needs_pos_redraw = 1;
       }
-      if (Math.abs(this._cached_y - y) >= 1) {
+      if (Math.abs(this._cached_y - y) >= 1 / window.game.scale) {
         this._cached_y = y;
         needs_pos_redraw = 1;
       }
@@ -77,8 +95,8 @@
           this.element.css('-webkit-transform', '');
         }
         this.element.css({
-          left: x,
-          top: y
+          left: x * window.game.scale,
+          top: y * window.game.scale
         });
       }
       if (this._show_rotation) {
@@ -122,10 +140,36 @@
       return this.move_intent = [0, 0];
     };
 
-    Sentient.prototype.apply_force = function() {
-      var p, v, x, y;
-      x = this.move_intent[0] * this.max_force;
-      y = this.move_intent[1] * this.max_force;
+    Sentient.prototype.apply_velocity = function(x, y) {
+      var max, v, vel;
+      if (x == null) {
+        x = 0;
+      }
+      if (y == null) {
+        y = 0;
+      }
+      vel = this.Body.GetLinearVelocity();
+      max = window.game.max_walk;
+      x = x + vel.x;
+      y = y + vel.y;
+      if (Math.abs(x) > max) {
+        x *= max / Math.abs(x);
+      }
+      if (Math.abs(y) > max) {
+        y *= max / Math.abs(y);
+      }
+      v = new Box2D.Common.Math.b2Vec2(x, y);
+      this.Body.SetLinearVelocity(v);
+      if (this.debug) {
+        return this.debug.html(parseInt(v.x) + ', ' + parseInt(v.y) + '  :  ' + parseInt(v.Length()) + ' <br>Jump: ' + this.can_jump);
+      }
+    };
+
+    Sentient.prototype.apply_force = function(x, y) {
+      var p, v, vel;
+      vel = this.Body.GetLinearVelocity();
+      x = x * this.max_force;
+      y = y * this.max_force;
       v = new Box2D.Common.Math.b2Vec2(x, y);
       p = this.Body.GetWorldCenter();
       return this.Body.ApplyForce(v, p);
@@ -134,7 +178,7 @@
     Sentient.prototype.apply_impulse = function(x, y) {
       var p, v, vel;
       vel = this.Body.GetLinearVelocity();
-      x = vel.x;
+      x = x * this.max_force;
       y = y * this.max_force;
       v = new Box2D.Common.Math.b2Vec2(x, y);
       p = this.Body.GetWorldCenter();
@@ -163,6 +207,14 @@
       return Player.__super__.constructor.apply(this, arguments);
     }
 
+    Player.prototype.animations = {
+      wave: [[0, 0], [1, 0], [0, 1], [1, 1], [2, 0], [3, 0], [2, 1], [4, 0], [2, 1], [3, 1], [0, 2], [1, 2], [0, 3], [2, 2], [1, 3], [3, 2], [2, 3], [4, 2]],
+      idle: [[0, 0], [0, 0], [0, 0], [0, 0], [1, 0], [1, 0], [1, 0], [1, 0], [0, 1], [0, 1], [0, 1], [0, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [0, 1], [0, 1], [0, 1], [0, 1], [1, 0], [1, 0], [1, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
+      run: [[3, 3], [4, 3], [5, 0], [6, 0], [5, 1], [7, 0], [6, 1], [5, 2], [8, 0], [7, 1], [6, 2], [5, 3], [8, 1], [7, 2], [6, 3], [8, 2], [7, 3], [8, 3], [0, 4], [1, 4]],
+      jump: [[6, 2], [6, 2], [6, 2], [6, 2], [6, 2], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [7, 1]],
+      flail: [[2, 4], [1, 5], [3, 4], [2, 5], [4, 4], [3, 5], [4, 4], [2, 5], [3, 4], [1, 5], [2, 4]]
+    };
+
     Player.prototype.init = function() {
       this._cached_x = 0;
       this._cached_y = 0;
@@ -172,47 +224,66 @@
       this.keys = {};
       this.move_intent = [0, 0];
       this.contacts = 0;
-      return this.can_jump = 0;
+      this.can_jump = 0;
+      this.frame = 0;
+      this.anim = 'idle';
+      this.anim_speed = 30;
+      return this.lastframe = 0;
+    };
+
+    Player.prototype.play = function(anim) {
+      if (this.anim !== anim) {
+        this.frame = 0;
+        this.lastframe = 0;
+        return this.anim = anim;
+      }
     };
 
     Player.prototype.contact_add = function(entity, point) {};
 
     Player.prototype.contact_begin = function(entity, point) {
-      var c_normal, c_point, d, x, y;
+      var head, j, v, worldmanifold, _i, _len, _ref;
+      worldmanifold = new Box2D.Collision.b2WorldManifold();
+      point.GetWorldManifold(worldmanifold);
+      this.contacts += 1;
       if (!this.bbb) {
         console.log(point);
+        console.log(worldmanifold);
+        console.log(this.Body.GetLinearVelocity());
         this.bbb = [];
       }
-      c_point = point.m_manifold.m_localPoint;
-      c_normal = point.m_manifold.m_localPlaneNormal;
-      if (point.m_nodeB.other.m_userData === this) {
-        this.contacts += 1;
-        d = $('<div style="width:3px;height:3px;position:absolute;z-index:9999;background-color:red;"></div>');
-        this.element.append(d);
-        this.bbb.push(d);
-        d.css({
-          'margin-left': c_point.x + this.w / 2,
-          'margin-top': c_point.y + this.h / 2
-        });
-        x = c_point.x + this.w / 2;
-        y = c_point.y + this.h / 2;
-        if (y >= this.h * .8) {
-          this.can_jump = 1;
+      j = 0;
+      head = 0;
+      _ref = worldmanifold.m_points;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        v = _ref[_i];
+        if (v.x !== 0 && v.y !== 0) {
+          if (v.y <= this.y + (this.h / 2 * .1)) {
+            head = 1;
+          }
+          if (v.y >= this.y + (this.h / 2 * .8)) {
+            j += .5;
+          }
         }
       }
-      if (point.m_next) {
-        return this.contact_begin(entity, point.m_next);
+      if (j && head === 0) {
+        this.jump_point = point;
+        return this.can_jump = 1;
       }
     };
 
     Player.prototype.contact_persist = function(entity, point) {};
 
     Player.prototype.contact_remove = function(entity, point) {
-      if (point.m_nodeB.other.m_userData === this) {
-        this.contacts -= 1;
+      var contact;
+      if (this.jump_point) {
+        if (this.jump_point === point) {
+          this.jump_point = 0;
+        }
       }
-      if (point.m_next) {
-        return this.contact_remove(entity, point.m_next);
+      contact = point;
+      if (contact) {
+        return this.contacts -= 1;
       }
     };
 
@@ -229,47 +300,161 @@
     };
 
     Player.prototype.update_2 = function() {
-      if (!this.debug) {
-        this.debug = $('<div class="debug"></div>');
-        this.element.append(this.debug);
+      var d, door, e, mod, name, run, time;
+      if (this.can_jump > 0) {
+        if (this.jump_point === 0) {
+          this.can_jump -= .1;
+        }
       }
-      if (this.can_jump) {
-        this.debug.html("JUMP " + this.contacts);
-      } else {
-        this.debug.html(" " + this.contacts);
-      }
-      this.can_jump = 0;
+      this.check_triggers();
       this.move_intent = [0, 0];
-      if (this.keys['up'] === 1) {
-        this.move_intent[1] -= .4;
-      } else {
-        this.move_intent[1] = 0;
+      mod = 1;
+      if (this.can_jump > 0) {
+        if (this.keys['up'] === 1) {
+          this.move_intent[1] -= 10;
+        } else {
+          this.move_intent[1] = 0;
+        }
+        mod = 1;
       }
+      run = 0;
       if (this.keys['right'] === 1) {
-        this.move_intent[0] += .1;
+        this.move_intent[0] += mod;
+        run = 1;
+        if (this.element.children('.anim').hasClass('flip')) {
+          this.element.children('.anim').removeClass('flip');
+        }
+      } else if (this.keys['left'] === 1) {
+        this.move_intent[0] += -mod;
+        run = 1;
+        if (!this.element.children('.anim').hasClass('flip')) {
+          this.element.children('.anim').addClass('flip');
+        }
       }
-      if (this.keys['left'] === 1) {
-        this.move_intent[0] += -.1;
+      if (this.can_jump > 0 && run === 1) {
+        this.play('run');
+      } else if (this.can_jump > 0 && run === 0) {
+        this.play('idle');
+      } else if (run) {
+        this.play('jump');
+      } else {
+        this.play('flail');
       }
-      return this.apply_force();
+      this.apply_force(0, this.move_intent[1]);
+      this.apply_velocity(this.move_intent[0], 0);
+      d = new Date();
+      time = d.getTime();
+      if (this.animations[this.anim].length > 0 && time > this.lastframe + this.anim_speed) {
+        this.lastframe = time;
+        $('#player').children('.anim').css('background-position', this.animations[this.anim][this.frame][0] * -100 + 'px ' + this.animations[this.anim][this.frame][1] * -128 + 'px ');
+        this.frame += 1;
+        if (this.frame > this.animations[this.anim].length - 1) {
+          this.frame = 0;
+        }
+      }
+      if (window.game.last_level) {
+        console.log('last level');
+        name = window.game.last_level.split('.')[0];
+        window.game.last_level = 0;
+        door = $('#' + name);
+        if (door.length > 0) {
+          console.log(door[0]);
+          e = door.first().data('entity').Body.GetPosition();
+          console.log(e.x, e.y);
+          return this.Body.SetPosition(e);
+        }
+      }
+    };
+
+    Player.prototype.check_triggers = function() {
+      var entity, found, note, _i, _len;
+      found = window.game.getBodyAtPoint(this.x + this.w / 2, this.y + this.h / 2);
+      note = '';
+      this.interact = 0;
+      for (_i = 0, _len = found.length; _i < _len; _i++) {
+        entity = found[_i];
+        if (entity.trigger) {
+          note = '-press (x) to interact-';
+          this.interact = entity;
+        }
+      }
+      if (this.interact.element) {
+        if (this.interact.element.hasClass('sign')) {
+          if (this.interact.element.attr('sign')) {
+            note = this.interact.element.attr('sign');
+          }
+        }
+      }
+      return $('#info').html(note);
+    };
+
+    Player.prototype.use_trigger = function() {
+      var b, el, id, level, o;
+      if (this.interact) {
+        el = this.interact.element;
+        if (el.hasClass('door')) {
+          id = el.attr('id');
+          level = id + '.html';
+          window.game.last_level = window.game.current_level;
+          window.game.load_level(level);
+        }
+        if (el.hasClass('action01')) {
+          b = $('#bridge').first().data('entity');
+          this.destroy_entity(b);
+        }
+        if (el.hasClass('min')) {
+          window.game.min = 'min';
+          window.game.swap_resources();
+          this.destroy_entity(this.interact);
+          o = $('.action01').first().data('entity');
+          this.destroy_entity(o);
+        }
+        if (el.hasClass('max')) {
+          window.game.min = 'max';
+          window.game.swap_resources();
+          this.destroy_entity(this.interact);
+          o = $('.action01').first().data('entity');
+          return this.destroy_entity(o);
+        }
+      }
+    };
+
+    Player.prototype.destroy_entity = function(entity) {
+      var idx, list;
+      entity.element.detach();
+      game.box2Dworld.DestroyBody(entity.Body);
+      if (entity.dynamic) {
+        list = game.dynamic_objects;
+      } else {
+        list = game.static_objects;
+      }
+      idx = list.indexOf(entity);
+      if (idx !== -1) {
+        return list.splice(idx, 1);
+      }
     };
 
     Player.prototype.keydown = function(e) {
-      var _ref, _ref1, _ref2;
+      var _ref, _ref1, _ref2, _ref3;
       if ((_ref = e.keyCode) === 32 || _ref === 87 || _ref === 38) {
-        return this.keys['up'] = 1;
-      } else if ((_ref1 = e.keyCode) === 68 || _ref1 === 39) {
-        return this.keys['right'] = 1;
+        this.keys['up'] = 1;
+      }
+      if ((_ref1 = e.keyCode) === 68 || _ref1 === 39) {
+        this.keys['right'] = 1;
       } else if ((_ref2 = e.keyCode) === 65 || _ref2 === 37) {
-        return this.keys['left'] = 1;
+        this.keys['left'] = 1;
+      }
+      if ((_ref3 = e.keyCode) === 88) {
+        return this.use_trigger();
       }
     };
 
     Player.prototype.keyup = function(e) {
       var _ref, _ref1, _ref2;
       if ((_ref = e.keyCode) === 32 || _ref === 87 || _ref === 38) {
-        return this.keys['up'] = 0;
-      } else if ((_ref1 = e.keyCode) === 68 || _ref1 === 39) {
+        this.keys['up'] = 0;
+      }
+      if ((_ref1 = e.keyCode) === 68 || _ref1 === 39) {
         return this.keys['right'] = 0;
       } else if ((_ref2 = e.keyCode) === 65 || _ref2 === 37) {
         return this.keys['left'] = 0;

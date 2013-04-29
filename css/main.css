@@ -4,8 +4,19 @@
 	width: 800px;
 	height: 600px;
 	border: 1px solid black;
-	margin: 100px auto;
+	margin: 100px auto 20px auto;
 	overflow:hidden;
+}
+
+#info{
+	position:relative;
+	display:block;
+	width: 800px;
+
+	margin: 10px auto;
+	overflow:hidden;
+	font-size: 24;
+	text-align:center;
 }
 
 #game_entities{
@@ -37,13 +48,30 @@
 
 #player{
 	position:absolute;
-	width:20px;
+	width:30px;
 	height:60px;
-	background-color:pink;
+	/*background-color:pink;*/
 	box-sizing:border-box;
 	z-index: 999999;
+
 }
 
+#player .anim{
+	width: 100px;
+	height: 128px;
+	margin-left:-35px;
+	margin-top:-60px;
+	background-image: url(../img/max/sheet.png);
+	}
+
+#player .anim.flip{
+	-moz-transform: scaleX(-1);
+    -o-transform: scaleX(-1);
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    filter: FlipH;
+    -ms-filter: "FlipH";
+}
 
 .debug{
 	width: 60px;

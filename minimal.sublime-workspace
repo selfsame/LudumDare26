@@ -4,6 +4,46 @@
 		"selected_items":
 		[
 			[
+				"game_",
+				"game_area_position"
+			],
+			[
+				"max",
+				"max_velocity"
+			],
+			[
+				"game",
+				"game_entities"
+			],
+			[
+				"contact",
+				"contact_add"
+			],
+			[
+				"x",
+				"x"
+			],
+			[
+				"m",
+				"m_body"
+			],
+			[
+				"cont",
+				"contactlist"
+			],
+			[
+				"dy",
+				"dynamic_objects"
+			],
+			[
+				"cons",
+				"construct_physical"
+			],
+			[
+				"curr",
+				"current_level_style"
+			],
+			[
 				"resize",
 				"resize_image_view"
 			],
@@ -464,10 +504,6 @@
 				"selection_box"
 			],
 			[
-				"cons",
-				"construct_selection_box"
-			],
-			[
 				"sele",
 				"selected_elements"
 			],
@@ -478,34 +514,6 @@
 			[
 				"elem",
 				"element_index"
-			],
-			[
-				"record",
-				"record_index"
-			],
-			[
-				"refresh",
-				"refresh_selection_handles"
-			],
-			[
-				"level",
-				"level_appropriate_monster"
-			],
-			[
-				"rew",
-				"reward_player"
-			],
-			[
-				"x",
-				"x"
-			],
-			[
-				"bee",
-				"_bee_update"
-			],
-			[
-				"style",
-				"style_statements"
 			]
 		]
 	},
@@ -515,15 +523,23 @@
 			"file": "index.html",
 			"settings":
 			{
-				"buffer_size": 656,
+				"buffer_size": 765,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "levels/level01.html",
+			"file": "coffee/entities.coffee",
 			"settings":
 			{
-				"buffer_size": 2252,
+				"buffer_size": 8281,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "coffee/game.coffee",
+			"settings":
+			{
+				"buffer_size": 8394,
 				"line_ending": "Windows"
 			}
 		},
@@ -531,7 +547,7 @@
 			"file": "css/main.css",
 			"settings":
 			{
-				"buffer_size": 230,
+				"buffer_size": 1144,
 				"line_ending": "Windows"
 			}
 		},
@@ -545,11 +561,28 @@
 			}
 		},
 		{
-			"file": "coffee/game.coffee",
+			"file": "/C/Users/jplur/Desktop/snimator/demo.html",
 			"settings":
 			{
-				"buffer_size": 187,
+				"buffer_size": 6580,
 				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "levels/level05.html",
+			"settings":
+			{
+				"buffer_size": 11241,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "package {\n	// Imports some things into the movie.\n	import flash.display.Sprite;\n	import flash.events.*;\n	import flash.events.KeyboardEvent;\n	import Box2D.Dynamics.*;\n	import Box2D.Collision.*;\n	import Box2D.Collision.Shapes.*;\n	import Box2D.Common.Math.*;\n\n	public class Box2d extends Sprite {\n\n		public function Box2d() {\n\n			addEventListener(Event.ENTER_FRAME, Update, false, 0, true);\n			stage.addEventListener(KeyboardEvent.KEY_DOWN, KeyDown);\n			stage.addEventListener(KeyboardEvent.KEY_UP, KeyUp);\n\n			var worldAABB:b2AABB = new b2AABB();//Creates a new world\n			worldAABB.lowerBound.Set(-100.0, -100.0);//Sets the lower bloundaries of the world (If a shape goes outside this it will freez)\n			worldAABB.upperBound.Set(100.0, 100.0);//Sets the upper bloundaries of the world (If a shape goes outside this it will freez)\n\n			var gravity:b2Vec2 = new b2Vec2(0.0, 10.0);//Sets gravity. First number is Y and second is x\n			var doSleep:Boolean = true;//If the shapes are allowed to sleep. (Stop simulating)\n			m_world = new b2World(worldAABB, gravity, doSleep);//Sets everything together to make a Box2d World\n\n			CreateBox(275, 375, 600, 50, true, new Ground());//Ground\n\n			CreateCircle(250, 100, 50, false, new Circle());//Ball\n\n			CreateHero(200, 300);//Player\n\n			CreateBox(500, 302, 200, 100, true, new Ground());//Static Box on right side\n\n			/* following code makes some stacks of blocks*/\n			for (var x:int = 1; x<4; x++) {\n				for (var i:int = 1; i<11; i++) {\n					CreateBox(((300+(20*x))-(.25*i)), (365-(20*i)), 20, 20, false, new Box());\n				}\n			}\n		}\n		/*\n		          I personaly think its MUCh easier to put the code into functions,\n		         because then you dont need to type it again, and again, and again. And it works just fine with function like createCircle and createBox.\n		          And when its time to start making levels, you will have a lot less typing to do when you can just type in the function.\n		          */\n\n		/*\n		      Following Function Creates the Hero\n		      CreateHero(X Posision, Y Posision, Width of Hero, Height of Hero)\n		      */\n		public function CreateHero(x:Number, y:Number, width:Number = 20, height:Number = 20) {\n			bodyDef = new b2BodyDef();\n			bodyDef.position.x = (x)/physScale;\n			bodyDef.position.y = (y)/physScale;\n			boxDef = new b2PolygonDef();\n			boxDef.SetAsBox(GetRealWH(20), GetRealWH(20));\n			boxDef.density = 1.0;//Because the density is at higher then 0 it moves.\n			boxDef.friction = 0.3;\n			boxDef.restitution = 0.2;\n			bodyDef.userData = new PlayerBox();\n			bodyDef.userData.name = \"Player\";\n			bodyDef.userData.width = physScale * 2 * GetRealWH(width);\n			bodyDef.userData.height = physScale * 2 * GetRealWH(height);\n			body = m_world.CreateBody(bodyDef);\n			body.SetBullet(true);//Tells flash to treat it like a bullet (Continuous collision detection.)\n			body.CreateShape(boxDef);\n			body.SetMassFromShapes();\n			bodyDef.userData.body = body;//This is the only way I know that u can get a specific body from the World.\n			//If you have a better idea, tell me!\n			addChild(bodyDef.userData);\n\n		}\n		/*\n		      Following function Creates a Circle\n		      CreateCircle(X posision, Y Posision, Width/Height of ball, Is the ball static (Inmoveable), The movieclip you want to be shown as the circle (Example: new Circle())\n		      */\n		public function CreateCircle(x:Number, y:Number, width:Number, static:Boolean, Cover) {\n			/* Following Code creates a circle */\n			bodyDef = new b2BodyDef();\n			bodyDef.position.x = x/physScale;\n			bodyDef.position.y = y/physScale;\n			circleDef = new b2CircleDef();//Defines circleDef as a new b2CircleDef\n			circleDef.radius = GetRealWH(width);//Sets the radius of the ball\n			circleDef.density = 1.0;\n			circleDef.friction = 0.3;\n			circleDef.restitution = 0.2;\n			bodyDef.userData = Cover;//sets userData to a new Circle (See Library)\n			bodyDef.userData.width = 30 * 2 * GetRealWH(width);//Sets width and height. Third Number is the same as the radius.\n			bodyDef.userData.height = 30 * 2 * GetRealWH(width);\n			trace(bodyDef.userData.height);\n			body = m_world.CreateBody(bodyDef);\n			body.CreateShape(circleDef);\n			body.SetMassFromShapes();\n			addChild(bodyDef.userData);\n\n		}\n		/*\n		      Following function creates a box\n		      CreateBox(X posision, Y Posision, Width, Height, Is the box static (Inmoveable), The movieclip you want to be shown as the box (Example: new Box())\n		      */\n		public function CreateBox(x:Number, y:Number, width:Number, height:Number, static:Boolean, Cover) {\n			/* Creates the static box on the right side of the screen*/\n			bodyDef = new b2BodyDef();\n			bodyDef.position.x = (x)/physScale;\n			bodyDef.position.y = (y)/physScale;\n			boxDef = new b2PolygonDef();\n			boxDef.SetAsBox(GetRealWH(width), GetRealWH(height));\n			if (static) {\n				boxDef.density = 0.0;\n			}\n			else {\n				boxDef.density = 1.0;\n			}\n			boxDef.friction = 0.3;\n			boxDef.restitution = 0.4;\n			bodyDef.userData = Cover;\n			bodyDef.userData.width = physScale * 2 * GetRealWH(width);\n			bodyDef.userData.height = physScale * 2 * GetRealWH(height);\n			bodyDef.isBullet = true;//This tells flash to treat all boxes like bullets. This is CPU consuming with a lot of boxes.\n			//But the hit test is WAY better when you use this.\n			body = m_world.CreateBody(bodyDef);\n			body.CreateShape(boxDef);\n			body.SetMassFromShapes();\n			addChild(bodyDef.userData);\n\n		}\n		/*\n		      I hade to make this function because I noticed that\n		      the width and height of the shapes were 2 times to large\n		      even to I divided it by physScale.\n		      This is because Box2d when doing width and height only takes from the center out.\n		      For Example: if I use this SetAsBox(100/physScale, 100/physScale)\n		      I will get a box that is 200x200 because the 100/physScale is the distance from the\n		      center of the box to the top  or the sides.\n\n		      I made this function because I like using the numbers I usualy use in flash\n		      when making games.\n		      */\n		public function GetRealWH(Num:Number) {\n			return Num / physScale / 2;\n		}\n		/*\n		      Following functions a controls when any aroow key is pressed.\n		      */\n		public var Left:Boolean = false;\n		public var Right:Boolean = false;\n		public var Up:Boolean = false;\n		public function KeyDown(e:KeyboardEvent) {\n			trace(e.keyCode);\n			var TheChild = getChildByName(\"Player\");\n			var Body = TheChild.body;\n			switch (e.keyCode) {\n				case 37 ://Left\n					Left = true;\n					break;\n				case 38 ://Up\n					Up = true;\n					break;\n				case 39 ://Right\n					Right = true;\n					break;\n\n			}\n		}\n		public function KeyUp(e:KeyboardEvent) {\n			trace(e.keyCode);\n			var TheChild = getChildByName(\"Player\");\n			var Body = TheChild.body;\n			switch (e.keyCode) {\n				case 37 ://Left\n					Left = false;\n					break;\n				case 38 ://Up\n					Up = false;\n					break;\n				case 39 ://Right\n					Right = false;\n					break;\n\n			}\n		}\n		/* Following function gets the body from a cordinate (x, y)*/\n		public function GetBodyAtPoint(px:Number, py:Number, includeStatic:Boolean = false) {\n			// Make a small box.\n			var px2 = px/physScale;\n			var py2 = py/physScale;\n			var PointVec:b2Vec2 = new b2Vec2();\n			PointVec.Set(px2, py2);\n			var aabb:b2AABB = new b2AABB();\n			aabb.lowerBound.Set(px2 - 0.001, py2 - 0.001);\n			aabb.upperBound.Set(px2 + 0.001, py2 + 0.001);\n\n			// Query the world for overlapping shapes.\n			var k_maxCount:int = 10;\n			var shapes:Array = new Array();\n			var count:int = m_world.Query(aabb, shapes, k_maxCount);\n			var body:b2Body = null;\n			for (var i:int = 0; i < count; ++i) {\n				if (shapes[i].m_body.IsStatic() == false || includeStatic) {\n					var tShape:b2Shape = shapes[i] as b2Shape;\n					var inside:Boolean = tShape.TestPoint(tShape.m_body.GetXForm(), PointVec);\n					if (inside) {\n						body = tShape.m_body;\n						break;\n					}\n				}\n			}\n			return body;\n		}\n		public function Update(e:Event):void {\n			/*Following code down to line 252 Makes the Player move left, right and jump*/\n			var TheChild = getChildByName(\"Player\");//Getts a child named Box\n			var Body = TheChild.body;//Get the var body from the child.\n			if (Left) {//If Left Arrow is down\n				Body.WakeUp();//Wakes the body up if its sleeping\n				Body.m_linearVelocity.x = -3;//Adds to the linearVelocity of the box.\n			}\n			if (Right) {//If right arrow is down\n				Body.WakeUp();//Wakes the body up if its sleeping\n				Body.m_linearVelocity.x = 3;//Adds to the linearVelocity of the box.\n			}\n			if (Up) {\n				if (Body.GetLinearVelocity().y > -1) {//Stops player from sometimes jumpping higher then suppose to\n					/*\n					               I have made 3 hit points.\n					               */\n					var Hit = GetBodyAtPoint(TheChild.x, TheChild.y+(TheChild.height/2+2), true);//Under\n					var Hit1 = GetBodyAtPoint(TheChild.x-(TheChild.width/2)+2, TheChild.y+(TheChild.height/2+2), true);//Down-Left\n					var Hit2 = GetBodyAtPoint(TheChild.x+(TheChild.width/2)-2, TheChild.y+(TheChild.height/2+2), true);//Down-Right\n					if (Hit != null && Hit.m_userData != TheChild) {\n						Body.ApplyImpulse(new b2Vec2(0.0, -3.0), Body.GetWorldCenter());//Applys and impuls to the player. (Makes it jump)\n					}\n					else if (Hit1 != null && Hit1.m_userData != TheChild || Hit2 != null && Hit2.m_userData != TheChild) {\n\n						Body.ApplyImpulse(new b2Vec2(0.0, -3.0), Body.GetWorldCenter());\n					}//Applys and impuls to the player. (Makes it jump)\n				}\n			}\n		};\n		Body.m_sweep.a = 0;//This is what stops the player from rotating\n		/*\n		         But because its only called once a frame it will allow the player to rotate a little.\n		         Which makes it more realistic.\n\n		         */\n\n		m_world.Step(m_timeStep, m_iterations);//This runns the Box2D World\n\n		//Body.m_sweep.a = 0; //If you wanned to take the tiny movement away you could move this code here.\n		// The follwoing code rotates, sets the x and y cordinates of the movieclips the player sees.\n		for (var bb:b2Body = m_world.m_bodyList; bb; bb = bb.m_next) {//Makes a for loop scanning all the bodys in the World\n			if (bb.m_userData is Sprite) {//Checks if bb.m_userData is a spirit (Movieclip)\n				bb.m_userData.x = bb.GetPosition().x * physScale;//Changes the x\n				bb.m_userData.y = bb.GetPosition().y * physScale;//Changes the y\n				bb.m_userData.rotation = bb.GetAngle() * (180/Math.PI);//Changes the rotation\n			}\n		}\n	}\n	/* Vars used in creating shapes */\n	public var body:b2Body;\n	public var bodyDef:b2BodyDef;\n	public var boxDef:b2PolygonDef;\n	public var circleDef:b2CircleDef;\n\n	public var m_world:b2World;\n	public var m_iterations:int = 15;\n	public var physScale:Number = 30;\n	public var m_timeStep:Number = 1.0/physScale;\n\n}\n}",
+			"settings":
+			{
+				"buffer_size": 10643,
+				"line_ending": "Windows",
+				"name": "package {"
 			}
 		}
 	],
@@ -577,6 +610,12 @@
 	},
 	"file_history":
 	[
+		"/C/xampp/htdocs/LD_minimal/levels/level02.html",
+		"/C/xampp/htdocs/LD_minimal/levels/level01.html",
+		"/C/xampp/htdocs/LD_minimal/levels/empty.html",
+		"/C/xampp/htdocs/LD_minimal/levels/background02.html",
+		"/C/xampp/htdocs/LD_minimal/levels/background01.html",
+		"/C/Users/jplur/Desktop/snimator/dance.html",
 		"/C/Users/jplur/Desktop/snimator/demo.html",
 		"/C/xampp/htdocs/pagelayer/js/libs/css_parser.js",
 		"/C/Users/jplur/Desktop/TomeNET/lib/game/e_info.txt",
@@ -698,13 +737,7 @@
 		"/C/Users/jplur/Desktop/alien_coffee/coffee/game.coffee",
 		"/C/Users/jplur/Desktop/alien_coffee/make.bat",
 		"/C/Users/jplur/Desktop/alien_coffee/generate.js",
-		"/C/Users/jplur/Desktop/alien_coffee/functions.js",
-		"/C/Users/jplur/Desktop/alien_coffee/alien_archaeologist.js",
-		"/C/Users/jplur/AppData/Roaming/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
-		"/C/Users/jplur/Desktop/alien_coffee/sprites.js",
-		"/C/Users/jplur/Desktop/alien_coffee/coffee/make.bat",
-		"/C/Users/jplur/Desktop/alien_coffee/coffee/sprites.coffee",
-		"/C/Users/jplur/Desktop/alien_coffee/game.js"
+		"/C/Users/jplur/Desktop/alien_coffee/functions.js"
 	],
 	"find":
 	{
@@ -723,6 +756,13 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"game_w",
+			"max_force",
+			"collision",
+			"game_area_position",
+			"window.game.game_area_position",
+			"game_area_position",
+			"border",
 			"canvas",
 			"new_dialogue",
 			"x_to_bai",
@@ -843,14 +883,7 @@
 			"final",
 			"right_panel_pos",
 			"style_view",
-			"folder_select",
-			"offset_without",
-			"window.tools",
-			"font",
-			"target_path",
-			"users",
-			"amazon_s3_upload",
-			"manage_scroll"
+			"folder_select"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -882,7 +915,7 @@
 	"groups":
 	[
 		{
-			"selected": 4,
+			"selected": 6,
 			"sheets":
 			[
 				{
@@ -890,15 +923,15 @@
 					"file": "index.html",
 					"settings":
 					{
-						"buffer_size": 656,
+						"buffer_size": 765,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								379,
-								379
+								601,
+								601
 							]
 						],
 						"settings":
@@ -915,60 +948,86 @@
 				},
 				{
 					"buffer": 1,
-					"file": "levels/level01.html",
+					"file": "coffee/entities.coffee",
 					"settings":
 					{
-						"buffer_size": 2252,
+						"buffer_size": 8281,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1390,
-								1390
+								6205,
+								6205
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/HTML/HTML.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
+							"syntax": "Packages/CoffeeScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 606.0,
+						"translation.y": 4238.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 2,
-					"file": "css/main.css",
+					"file": "coffee/game.coffee",
 					"settings":
 					{
-						"buffer_size": 230,
+						"buffer_size": 8394,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								126,
-								126
+								8360,
+								8360
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/CSS/CSS.tmLanguage"
+							"syntax": "Packages/CoffeeScript.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 4230.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 3,
+					"file": "css/main.css",
+					"settings":
+					{
+						"buffer_size": 1144,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								758,
+								758
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CSS/CSS.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 450.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
 					"file": "coffee/physics.coffee",
 					"settings":
 					{
@@ -979,8 +1038,8 @@
 						"selection":
 						[
 							[
-								18,
-								18
+								1970,
+								1970
 							]
 						],
 						"settings":
@@ -991,33 +1050,90 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 270.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 4,
-					"file": "coffee/game.coffee",
+					"buffer": 5,
+					"file": "/C/Users/jplur/Desktop/snimator/demo.html",
 					"settings":
 					{
-						"buffer_size": 187,
+						"buffer_size": 6580,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								145,
-								145
+								0,
+								0
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/CoffeeScript.tmLanguage"
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 3,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 1278.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "levels/level05.html",
+					"settings":
+					{
+						"buffer_size": 11241,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								11241,
+								11241
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 192.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"settings":
+					{
+						"buffer_size": 10643,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2731,
+								2731
+							]
+						],
+						"settings":
+						{
+							"auto_name": "package {",
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 2744.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1070,7 +1186,7 @@
 	"menu_visible": true,
 	"output.exec":
 	{
-		"height": 44.0
+		"height": 48.0
 	},
 	"replace":
 	{
