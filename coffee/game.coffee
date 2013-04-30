@@ -2,6 +2,11 @@ Entity = window.entities.Entity
 Sentient = window.entities.Sentient
 Player = window.entities.Player
 
+window.requestAnimFrame = ((callback) ->
+    window.requestAnimationFrame or window.webkitRequestAnimationFrame or window.mozRequestAnimationFrame or window.oRequestAnimationFrame or window.msRequestAnimationFrame or (callback) ->
+      window.setTimeout callback, 1000 / 60
+  )()
+
 $(window).ready ->
 	window.game =
 		box2Dworld: 0
@@ -81,7 +86,7 @@ $(window).ready ->
 			for key of @backgrounds
 				if name in @backgrounds[key]
 					bg = key
-
+			$('#game_level').hide()
 			$.get './levels/'+bg, (data)->
 
 				temp = $('<div></div>')
@@ -114,10 +119,13 @@ $(window).ready ->
 					for div in temp.children('div, img, p, h1')
 						#console.log '-- ', div
 						$('#game_level').append $(div)
-					window.game.setup_level_physics()
 
-					if window.game.min is 'min'
-						window.game.swap_resources()
+					$('#game_level').imagesLoaded ()->
+						$('#game_level').show()
+						window.game.setup_level_physics()
+
+						if window.game.min is 'min'
+							window.game.swap_resources()
 
 				
 
@@ -213,6 +221,7 @@ $(window).ready ->
 			@insert_player()
 
 
+
 			if @debugdraw
 				debugDraw = new b2DebugDraw()
 				debugDraw.SetSprite document.getElementById("game_area").getContext("2d")
@@ -268,7 +277,7 @@ $(window).ready ->
 
 		update_world: ()->
 
-			requestAnimationFrame(window.game.update_world)
+			window.requestAnimFrame(window.game.update_world)
 
 			for entity in window.game.dynamic_objects
 				entity.pre_step_update()
@@ -336,5 +345,5 @@ $(window).ready ->
 
 
 	window.game.init()
-	window.game.load_level 'level03.html'
+	window.game.load_level 'level05.html'
 	window.game.update_world()

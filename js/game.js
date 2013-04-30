@@ -9,6 +9,12 @@
 
   Player = window.entities.Player;
 
+  window.requestAnimFrame = (function(callback) {
+    return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {
+      return window.setTimeout(callback, 1000 / 60);
+    };
+  })();
+
   $(window).ready(function() {
     window.game = {
       box2Dworld: 0,
@@ -99,6 +105,7 @@
             bg = key;
           }
         }
+        $('#game_level').hide();
         return $.get('./levels/' + bg, function(data) {
           var div, style, temp, _i, _len, _ref;
           temp = $('<div></div>');
@@ -134,10 +141,13 @@
               div = _ref1[_j];
               $('#game_level').append($(div));
             }
-            window.game.setup_level_physics();
-            if (window.game.min === 'min') {
-              return window.game.swap_resources();
-            }
+            return $('#game_level').imagesLoaded(function() {
+              $('#game_level').show();
+              window.game.setup_level_physics();
+              if (window.game.min === 'min') {
+                return window.game.swap_resources();
+              }
+            });
           });
         });
       },
@@ -299,7 +309,7 @@
       },
       update_world: function() {
         var entity, _i, _j, _len, _len1, _ref, _ref1;
-        requestAnimationFrame(window.game.update_world);
+        window.requestAnimFrame(window.game.update_world);
         _ref = window.game.dynamic_objects;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           entity = _ref[_i];
@@ -359,7 +369,7 @@
       }
     };
     window.game.init();
-    window.game.load_level('level03.html');
+    window.game.load_level('level05.html');
     return window.game.update_world();
   });
 
